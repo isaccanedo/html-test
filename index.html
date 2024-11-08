@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rota de Voo Mundial</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f0f0f0;
+        }
+
+        .map-container {
+            position: relative;
+            width: 1000px;
+            height: 500px;
+            background: url("data:image/svg+xml,%3Csvg width='1000' height='500' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%2387CEEB'/%3E%3Cpath d='M50,200 L950,200' stroke='%23228B22' stroke-width='80'/%3E%3C/svg%3E");
+            border: 2px solid #333;
+        }
+
+        #airplane {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            transform-origin: center;
+            margin-left: -15px; /* Ajuste para centralizar o avião */
+            margin-top: -15px; /* Ajuste para centralizar o avião */
+        }
+
+        .path {
+            position: absolute;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: dash 5s linear forwards;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        #path1, #path2 {
+            fill: none;
+            stroke: red;
+            stroke-width: 2;
+            stroke-dasharray: 5;
+            opacity: 0;
+        }
+
+        #path1.active, #path2.active {
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="map-container">
+        <svg width="1000" height="500">
+            <!-- Rota Brasil-Portugal -->
+            <path id="path1" d="M300,300 Q450,250 600,200" />
+            
+            <!-- Rota Portugal-Coreia do Sul -->
+            <path id="path2" d="M600,200 Q750,150 900,250" />
+        </svg>
+
+        <svg id="airplane" viewBox="0 0 24 24">
+            <path fill="#000" d="M21,16V14L13,9V3.5A1.5,1.5 0 0,0 11.5,2A1.5,1.5 0 0,0 10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5L21,16Z" />
+        </svg>
+    </div>
+
+    <script>
+        const airplane = document.getElementById('airplane');
+        const path1 = document.getElementById('path1');
+        const path2 = document.getElementById('path2');
+
+        function moveAirplane(path, duration, delay = 0) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    path.classList.add('active');
+                    const length = path.getTotalLength();
+                    let start = null;
+
+                    function animate(timestamp) {
+                        if (!start) start = timestamp;
+                        const progress = (timestamp - start) / duration;
+
+                        if (progress <= 1) {
+                            const point = path.getPointAtLength(length * progress);
+                            
+                            // Calcular o ângulo da rota
+                            const nextPoint = path.getPointAtLength(Math.min(length * (progress + 0.01), length));
+                            const angle = Math.atan2(nextPoint.y - point.y, nextPoint.x - point.x) * 180 / Math.PI;
+                            
+                            airplane.style.left = point.x + 'px';
+                            airplane.style.top = point.y + 'px';
+                            airplane.style.transform = `rotate(${angle}deg)`;
+                            requestAnimationFrame(animate);
+                        } else {
+                            resolve();
+                        }
+                    }
+
+                    requestAnimationFrame(animate);
+                }, delay);
+            });
+        }
+
+        async function startAnimation() {
+            // Resetar opacidade das rotas
+            path1.classList.remove('active');
+            path2.classList.remove('active');
+            
+            // Posicionar avião no início
+            airplane.style.left = '300px';
+            airplane.style.top = '300px';
+            
+            // Primeira rota: Brasil -> Portugal
+            await moveAirplane(path1, 5000);
+            
+            // Segunda rota: Portugal -> Coreia do Sul
+            await moveAirplane(path2, 5000);
+            
+            // Reiniciar a animação após um delay
+            setTimeout(startAnimation, 2000);
+        }
+
+        startAnimation();
+    </script>
+</body>
+</html>
